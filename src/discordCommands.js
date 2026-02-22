@@ -1,38 +1,50 @@
-import { SlashCommandBuilder } from 'discord.js';
+import { SlashCommandBuilder, InteractionContextType, ApplicationIntegrationType } from 'discord.js';
 
 export function buildCommands() {
-  const pse = new SlashCommandBuilder()
-    .setName('pse')
-    .setDescription('Show which Roblox group members are online and what they are playing.');
+  // For user-installed apps, commands should define:
+  // - contexts: where the command can be used (DMs, Group DMs/private channels, etc.)
+  // - integration types: whether the command is available for user installs and/or guild installs.
+  //
+  // Without these, Discord may accept the registration but not surface commands in private channels.
 
-  const auth = new SlashCommandBuilder()
-    .setName('auth')
-    .setDescription('Owner only: grant Unlimited Access to a Discord user ID.')
-    .addStringOption(opt =>
-      opt.setName('userid')
-        .setDescription('Discord user ID to authorize')
-        .setRequired(true)
-    );
+  const userOnly = (builder) =>
+    builder
+      .setContexts(InteractionContextType.BotDM, InteractionContextType.PrivateChannel)
+      .setIntegrationTypes(ApplicationIntegrationType.UserInstall);
 
-  const unauth = new SlashCommandBuilder()
-    .setName('unauth')
-    .setDescription('Owner only: remove Unlimited Access from a Discord user ID.')
-    .addStringOption(opt =>
-      opt.setName('userid')
-        .setDescription('Discord user ID to unauthorize')
-        .setRequired(true)
-    );
+  const pse = userOnly(
+    new SlashCommandBuilder()
+      .setName('pse')
+      .setDescription('Show which Roblox group members are online and what they are playing.')
+  );
 
-  const authinfo = new SlashCommandBuilder()
-    .setName('authinfo')
-    .setDescription('Owner only: list users in trial/unlimited state.');
+  const auth = userOnly(
+    new SlashCommandBuilder()
+      .setName('auth')
+      .setDescription('Owner only: grant Unlimited Access to a Discord user ID.')
+      .addStringOption(opt =>
+        opt.setName('userid')
+          .setDescription('Discord user ID to authorize')
+          .setRequired(true)
+      )
+  );
 
-  // dm_permission helps commands show in DMs; global propagation still applies.
-  const cmds = [pse, auth, unauth, authinfo].map(c => {
-    const json = c.toJSON();
-    json.dm_permission = true;
-    return json;
-  });
+  const unauth = userOnly(
+    new SlashCommandBuilder()
+      .setName('unauth')
+      .setDescription('Owner only: remove Unlimited Access from a Discord user ID.')
+      .addStringOption(opt =>
+        opt.setName('userid')
+          .setDescription('Discord user ID to unauthorize')
+          .setRequired(true)
+      )
+  );
 
-  return cmds;
+  const authinfo = userOnly(
+    new SlashCommandBuilder()
+      .setName('authinfo')
+      .setDescription('Owner only: list users in trial/unlimited state.')
+  );
+
+  return [pse, auth, unauth, authinfo].map(c => c.toJSON());
 }
